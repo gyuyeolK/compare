@@ -47,30 +47,51 @@ def main():
                         default=[0.25, 0.0625])  # 1/4, 1/16
     parser.add_argument("--alphas", nargs="+", type=float,
                         default=[0.5, 0.25])
+    parser.add_argument("--include_dion_fast", action="store_true",
+                        help="also benchmark Dion with cholesky-QR and RCQR "
+                             "(skips warmup so the timing reflects the fast "
+                             "path from step 1)")
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
-    print(f"{'size':>8} {'optimizer':>22} {'time/step (s)':>15}")
-    print("-" * 50)
+    print(f"{'size':>8} {'optimizer':>30} {'time/step (s)':>15}")
+    print("-" * 58)
 
     for n in args.sizes:
         # Muon
         t = benchmark_one(lambda ps: Muon(ps, lr=0.02), n, device,
                           warmup=args.warmup, iters=args.iters)
-        print(f"{n:>8} {'Muon':>22} {t:>15.5f}")
-        # Dion at various ranks
+        print(f"{n:>8} {'Muon':>30} {t:>15.5f}")
+        # Dion at various ranks (default: standard QR)
         for rf in args.rank_fractions:
             t = benchmark_one(
-                lambda ps, rf=rf: Dion(ps, lr=0.01, rank_fraction=rf),
+                lambda ps, rf=rf: Dion(ps, lr=0.01, rank_fraction=rf,
+                                       qr_method="qr", qr_warmup_steps=0),
                 n, device, warmup=args.warmup, iters=args.iters)
-            print(f"{n:>8} {'Dion (rf=' + str(rf) + ')':>22} {t:>15.5f}")
+            print(f"{n:>8} {'Dion qr (rf=' + str(rf) + ')':>30} {t:>15.5f}")
+        # Optionally also bench Dion with the fast QR variants
+        if args.include_dion_fast:
+            for rf in args.rank_fractions:
+                t = benchmark_one(
+                    lambda ps, rf=rf: Dion(ps, lr=0.01, rank_fraction=rf,
+                                           qr_method="cholesky",
+                                           qr_warmup_steps=0),
+                    n, device, warmup=args.warmup, iters=args.iters)
+                print(f"{n:>8} {'Dion chol (rf=' + str(rf) + ')':>30} {t:>15.5f}")
+            for rf in args.rank_fractions:
+                t = benchmark_one(
+                    lambda ps, rf=rf: Dion(ps, lr=0.01, rank_fraction=rf,
+                                           qr_method="rcqr",
+                                           qr_warmup_steps=0),
+                    n, device, warmup=args.warmup, iters=args.iters)
+                print(f"{n:>8} {'Dion rcqr (rf=' + str(rf) + ')':>30} {t:>15.5f}")
         # Dion2 at various alphas
         for a in args.alphas:
             t = benchmark_one(
                 lambda ps, a=a: Dion2(ps, lr=0.02, alpha=a, selection="l1"),
                 n, device, warmup=args.warmup, iters=args.iters)
-            print(f"{n:>8} {'Dion2 (a=' + str(a) + ')':>22} {t:>15.5f}")
+            print(f"{n:>8} {'Dion2 (a=' + str(a) + ')':>30} {t:>15.5f}")
         print()
 
 

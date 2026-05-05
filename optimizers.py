@@ -117,10 +117,90 @@ class Muon(Optimizer):
 
 @torch.no_grad()
 def _orthonormalize_qr(P: torch.Tensor) -> torch.Tensor:
-    """Return an orthonormal basis for the columns of P via QR."""
-    # torch.linalg.qr returns Q with orthonormal columns
+    """Return an orthonormal basis for the columns of P via Householder QR.
+
+    Most stable, slowest. Default fallback when faster methods fail.
+    """
     Q, _ = torch.linalg.qr(P, mode="reduced")
     return Q
+
+
+@torch.no_grad()
+def _orthonormalize_cholesky(P: torch.Tensor, eps: float = 0.0) -> torch.Tensor:
+    """Cholesky-QR.
+
+    For tall matrix P of shape (m, r) with m >= r, an orthonormal basis Q
+    for the columns of P satisfies P = Q R with R upper-triangular and
+    R^T R = P^T P =: G. With G = L L^T (Cholesky), R = L^T, so
+        Q = P R^{-1} = P L^{-T}
+        Q^T = L^{-1} P^T
+
+    `eps` (default 0) optionally adds a tiny diagonal ridge to G; only
+    useful for borderline cases. When P is well-conditioned this gives
+    machine-precision orthonormality. Caller falls back to QR on failure.
+    """
+    G = P.T @ P                                           # (r, r)
+    if eps > 0.0:
+        G = G + eps * torch.eye(G.size(0), device=G.device, dtype=G.dtype)
+    L = torch.linalg.cholesky(G)                          # G = L L^T, L lower
+    # Q^T = L^{-1} @ P^T  (solve L X = P^T  for X = Q^T)
+    Q_T = torch.linalg.solve_triangular(L, P.T, upper=False)
+    return Q_T.T
+
+
+@torch.no_grad()
+def _orthonormalize_rcqr(P: torch.Tensor, oversample: float = 1.25,
+                         eps: float = 0.0) -> torch.Tensor:
+    """Randomized Cholesky-QR (RCQR), unsharded version of Algorithm 5.
+
+    Two-stage scheme:
+      (i)  Sketch P with S of shape (~1.25 r, m), do thin QR on (S P) to get
+           a tiny triangular R1; pre-whiten B = P R1^{-1}.
+      (ii) Cholesky-QR on the well-conditioned B.
+
+    The pre-whitening drastically reduces the condition number of B,
+    making the subsequent Cholesky-QR much more stable than plain CQR.
+    """
+    m, r = P.shape
+    rt = max(r + 1, int(math.ceil(oversample * r)))
+    # Sketch S: (rt, m). The 1/sqrt(rt) scaling makes E[S^T S] = I.
+    S = torch.randn(rt, m, device=P.device, dtype=P.dtype) / math.sqrt(rt)
+    P_tilde = S @ P                                       # (rt, r)
+    _, R1 = torch.linalg.qr(P_tilde, mode="reduced")      # R1: (r, r), upper
+    # Pre-whiten: B = P R1^{-1}; B^T = R1^{-T} P^T = solve(R1^T, P^T)  with lower
+    B_T = torch.linalg.solve_triangular(R1.T, P.T, upper=False)
+    B = B_T.T                                             # (m, r)
+    # Cholesky-QR on B
+    G = B.T @ B
+    if eps > 0.0:
+        G = G + eps * torch.eye(G.size(0), device=G.device, dtype=G.dtype)
+    L = torch.linalg.cholesky(G)
+    Q_T = torch.linalg.solve_triangular(L, B.T, upper=False)
+    return Q_T.T
+
+
+@torch.no_grad()
+def _safe_orthonormalize(P: torch.Tensor, method: str) -> torch.Tensor:
+    """Try the requested method; fall back to standard QR on failure.
+
+    `method` is one of: "qr", "cholesky", "rcqr".
+    Cholesky / RCQR can blow up when P is rank-deficient or extremely
+    ill-conditioned (cond(P) >> 5e3 in practice; see Dion paper Appendix A).
+    On torch.linalg.LinAlgError or non-finite output we silently retry with
+    full Householder QR.
+    """
+    try:
+        if method == "cholesky":
+            Q = _orthonormalize_cholesky(P)
+        elif method == "rcqr":
+            Q = _orthonormalize_rcqr(P)
+        else:
+            return _orthonormalize_qr(P)
+        if not torch.isfinite(Q).all():
+            raise RuntimeError("non-finite output from fast orthonormalization")
+        return Q
+    except (torch.linalg.LinAlgError, RuntimeError):
+        return _orthonormalize_qr(P)
 
 
 class Dion(Optimizer):
@@ -134,10 +214,30 @@ class Dion(Optimizer):
     """
 
     def __init__(self, params, lr=0.01, rank_fraction=0.25, beta=0.05,
-                 weight_decay=0.0, eps=1e-8):
+                 weight_decay=0.0, eps=1e-8,
+                 qr_method="qr", qr_warmup_steps=200):
+        """
+        qr_method: orthonormalization method for power iteration.
+            "qr"        - Householder QR (default, most stable, slowest)
+            "cholesky"  - Cholesky-QR (Appendix A; ~3-10x faster than QR
+                          but unstable when cond(P) > 5e3)
+            "rcqr"      - randomized Cholesky-QR (Algorithm 5; safer than
+                          plain Cholesky-QR thanks to a sketch-based
+                          pre-whitening step)
+        qr_warmup_steps: use plain QR for the first this many steps before
+            switching to the requested method. Recommended for "cholesky"
+            because cond(P) is large early in training (see paper Fig. 5).
+            Set to 0 to use the fast method from step 1.
+        """
+        if qr_method not in ("qr", "cholesky", "rcqr"):
+            raise ValueError("qr_method must be 'qr', 'cholesky', or 'rcqr'")
         defaults = dict(lr=lr, rank_fraction=rank_fraction, beta=beta,
-                        weight_decay=weight_decay, eps=eps)
+                        weight_decay=weight_decay, eps=eps,
+                        qr_method=qr_method,
+                        qr_warmup_steps=qr_warmup_steps)
         super().__init__(params, defaults)
+        # global step count (shared across all parameters in this optimizer)
+        self._global_step = 0
 
     @torch.no_grad()
     def step(self, closure=None):
@@ -146,12 +246,18 @@ class Dion(Optimizer):
             with torch.enable_grad():
                 loss = closure()
 
+        self._global_step += 1
+
         for group in self.param_groups:
             lr = group["lr"]
             rf = group["rank_fraction"]
             beta = group["beta"]
             wd = group["weight_decay"]
             eps = group["eps"]
+            qr_method = group["qr_method"]
+            warmup = group["qr_warmup_steps"]
+            # use plain QR during warmup, requested method afterwards
+            method = "qr" if self._global_step <= warmup else qr_method
 
             for p in group["params"]:
                 if p.grad is None:
@@ -179,7 +285,7 @@ class Dion(Optimizer):
 
                 # 2. PowerIter1: P = M @ V, U = orthonormalize(P), W = M^T @ U
                 P = M @ V                          # (m, r)
-                U = _orthonormalize_qr(P)          # (m, r) with orthonormal columns
+                U = _safe_orthonormalize(P, method)  # (m, r), orthonormal cols
                 W = M.T @ U                        # (n, r)
 
                 # 3. error feedback: M <- M - beta * U W^T

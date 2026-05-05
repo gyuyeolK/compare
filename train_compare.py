@@ -63,7 +63,9 @@ def build_optimizers(model, opt_name, args):
                      ns_steps=5, weight_decay=args.weight_decay)
     elif opt_name == "dion":
         m_opt = Dion(matrix_params, lr=args.lr, rank_fraction=args.rank_fraction,
-                     beta=0.05, weight_decay=args.weight_decay)
+                     beta=0.05, weight_decay=args.weight_decay,
+                     qr_method=args.qr_method,
+                     qr_warmup_steps=args.qr_warmup_steps)
     elif opt_name == "dion2":
         m_opt = Dion2(matrix_params, lr=args.lr, alpha=args.alpha,
                       momentum_decay=0.95, selection=args.selection,
@@ -217,6 +219,15 @@ def main():
     parser.add_argument("--weight_decay", type=float, default=0.01)
     # Dion-specific
     parser.add_argument("--rank_fraction", type=float, default=0.25)
+    parser.add_argument("--qr_method", choices=["qr", "cholesky", "rcqr"],
+                        default="qr",
+                        help="orthonormalization method inside Dion's power "
+                             "iteration. cholesky/rcqr are much faster but "
+                             "may need a warmup; see Dion paper Appendix A.")
+    parser.add_argument("--qr_warmup_steps", type=int, default=200,
+                        help="number of plain-QR steps before switching to "
+                             "qr_method. Set to 0 to use the fast method "
+                             "from step 1.")
     # Dion2-specific
     parser.add_argument("--alpha", type=float, default=0.25)
     parser.add_argument("--selection", choices=["l1", "random"], default="l1")
