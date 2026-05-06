@@ -1,0 +1,59 @@
+Device: cuda
+GPU: NVIDIA GeForce RTX 3090 (24 GB)
+
+Config: 3000 steps × 2,097,152 tokens/step = 6.3B total tokens
+kappa tracking: method=svd, stride=100, dense_until=200
+Installed kappa-logging patch
+
+========== Training with DION ==========
+Model: 1414.0M parameters (d_model=2048, layers=24, heads=32)
+Effective batch: micro=2 × grad_accum=1024 = 2048 sequences = 2,097,152 tokens/step
+Dion-managed matrices: 96
+  step     1/3000 | train 11.2296 | val 9.6441 | lr_mult 1.000 | 431s | ETA 358.8h | kappa_obs=96
+Traceback (most recent call last):
+  File "/home/gyuyeolkim/compare/train_1p3b.py", line 623, in <module>
+    main()
+  File "/home/gyuyeolkim/compare/train_1p3b.py", line 425, in main
+    all_history[opt] = train_one(opt, args, device,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gyuyeolkim/compare/train_1p3b.py", line 281, in train_one
+    _, loss = model(xb, yb)
+              ^^^^^^^^^^^^^
+  File "/home/gyuyeolkim/anaconda3/envs/muon/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gyuyeolkim/anaconda3/envs/muon/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gyuyeolkim/compare/model.py", line 168, in forward
+    x = blk(x, cos, sin)
+        ^^^^^^^^^^^^^^^^
+  File "/home/gyuyeolkim/anaconda3/envs/muon/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gyuyeolkim/anaconda3/envs/muon/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gyuyeolkim/compare/model.py", line 124, in forward
+    x = x + self.attn(self.norm1(x), cos, sin)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gyuyeolkim/anaconda3/envs/muon/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gyuyeolkim/anaconda3/envs/muon/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gyuyeolkim/compare/model.py", line 92, in forward
+    k = apply_rope(k, cos, sin)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gyuyeolkim/compare/model.py", line 60, in apply_rope
+    rx2 = x1 * sin + x2 * cos
+          ~~~~~~~~~^~~~~~~~~~
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 23.57 GiB of which 1.06 MiB is free. Including non-PyTorch memory, this process has 23.56 GiB memory in use. Of the allocated memory 23.18 GiB is allocated by PyTorch, and 30.18 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+Fatal Python error: PyGILState_Release: thread state 0x7efc84074e30 must be current when releasing
+Python runtime state: finalizing (tstate=0x00000000009be910)
+
+Thread 0x00007efead9b1740 (most recent call first):
+  <no Python frame>
+
+Extension modules: numpy._core._multiarray_umath, numpy.linalg._umath_linalg, torch._C, torch._C._dynamo.autograd_compiler, torch._C._dynamo.eval_frame, torch._C._dynamo.guards, torch._C._dynamo.utils, torch._C._fft, torch._C._linalg, torch._C._nested, torch._C._nn, torch._C._sparse, torch._C._special, numpy.random._common, numpy.random.bit_generator, numpy.random._bounded_integers, numpy.random._pcg64, numpy.random._mt19937, numpy.random._generator, numpy.random._philox, numpy.random._sfc64, numpy.random.mtrand, pyarrow.lib, pandas._libs.tslibs.ccalendar, pandas._libs.tslibs.np_datetime, pandas._libs.tslibs.dtypes, pandas._libs.tslibs.base, pandas._libs.tslibs.nattype, pandas._libs.tslibs.timezones, pandas._libs.tslibs.fields, pandas._libs.tslibs.timedeltas, pandas._libs.tslibs.tzconversion, pandas._libs.tslibs.timestamps, pandas._libs.properties, pandas._libs.tslibs.offsets, pandas._libs.tslibs.strptime, pandas._libs.tslibs.parsing, pandas._libs.tslibs.conversion, pandas._libs.tslibs.period, pandas._libs.tslibs.vectorized, pandas._libs.ops_dispatch, pandas._libs.missing, pandas._libs.hashtable, pandas._libs.algos, pandas._libs.interval, pandas._libs.lib, pyarrow._compute, pandas._libs.ops, pandas._libs.hashing, pandas._libs.arrays, pandas._libs.tslib, pandas._libs.sparse, pandas._libs.internals, pandas._libs.indexing, pandas._libs.index, pandas._libs.writers, pandas._libs.join, pandas._libs.window.aggregations, pandas._libs.window.indexers, pandas._libs.reshape, pandas._libs.groupby, pandas._libs.json, pandas._libs.parsers, pandas._libs.testing, charset_normalizer.md, requests.packages.charset_normalizer.md, requests.packages.chardet.md, yaml._yaml, pyarrow._parquet, pyarrow._fs, pyarrow._azurefs, pyarrow._hdfs, pyarrow._gcsfs, pyarrow._s3fs, multidict._multidict, yarl._quoting_c, propcache._helpers_c, aiohttp._http_writer, aiohttp._http_parser, aiohttp._websocket.mask, aiohttp._websocket.reader_c, frozenlist._frozenlist, xxhash._xxhash, pyarrow._acero, pyarrow._csv, pyarrow._json, pyarrow._substrait, pyarrow._dataset, pyarrow._dataset_orc, pyarrow._parquet_encryption, pyarrow._dataset_parquet_encryption, pyarrow._dataset_parquet, regex._regex, markupsafe._speedups, PIL._imaging (total: 95)

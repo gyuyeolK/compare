@@ -1,0 +1,139 @@
+{
+  "overall": {
+    "n_params": 16,
+    "P_max": 8857.527227886236,
+    "P_median": 22.380677241638104,
+    "P_p95": 295.5645004785152,
+    "P_p99": 1763.2063614359142,
+    "P_n": 624,
+    "B_max": 6.783092672249312,
+    "B_median": 5.360997932767775,
+    "B_p95": 5.985819758996283,
+    "B_p99": 6.338367659011931,
+    "B_n": 624,
+    "P_postwarmup_max": 198.527133786676,
+    "P_postwarmup_median": 17.98021654370998,
+    "P_postwarmup_p95": 93.85815399847412,
+    "P_postwarmup_p99": 171.4817575379338,
+    "P_postwarmup_n": 144,
+    "B_postwarmup_max": 6.216578608972079,
+    "B_postwarmup_median": 5.345102705596222,
+    "B_postwarmup_p95": 5.887639178458503,
+    "B_postwarmup_p99": 6.056788366537959,
+    "B_postwarmup_n": 144
+  },
+  "per_param": {
+    "blocks.0.attn.qkv.weight": {
+      "shape_key": "shape(768, 64)_pos0",
+      "P_max": 535.2229610707179,
+      "B_max": 6.783092672249312,
+      "B_median": 5.345102705596222,
+      "n": 39
+    },
+    "blocks.0.attn.proj.weight": {
+      "shape_key": "shape(256, 64)_pos1",
+      "P_max": 597.8130383094019,
+      "B_max": 6.224382375227897,
+      "B_median": 5.3383758174134215,
+      "n": 39
+    },
+    "blocks.0.mlp.fc.weight": {
+      "shape_key": "shape(1024, 64)_pos2",
+      "P_max": 66.43925664156549,
+      "B_max": 5.940654014299781,
+      "B_median": 5.362402209982178,
+      "n": 39
+    },
+    "blocks.0.mlp.proj.weight": {
+      "shape_key": "shape(256, 64)_pos3",
+      "P_max": 241.0037526168509,
+      "B_max": 6.153876656071889,
+      "B_median": 5.387331826929065,
+      "n": 39
+    },
+    "blocks.1.attn.qkv.weight": {
+      "shape_key": "shape(768, 64)_pos4",
+      "P_max": 4646.500136996011,
+      "B_max": 6.381814003954732,
+      "B_median": 5.373208892974882,
+      "n": 39
+    },
+    "blocks.1.attn.proj.weight": {
+      "shape_key": "shape(256, 64)_pos5",
+      "P_max": 5876.240890062538,
+      "B_max": 6.620935007152699,
+      "B_median": 5.391259971418857,
+      "n": 39
+    },
+    "blocks.1.mlp.fc.weight": {
+      "shape_key": "shape(1024, 64)_pos6",
+      "P_max": 158.94836337578505,
+      "B_max": 6.338367659011931,
+      "B_median": 5.349148879996447,
+      "n": 39
+    },
+    "blocks.1.mlp.proj.weight": {
+      "shape_key": "shape(256, 64)_pos7",
+      "P_max": 252.25302817565932,
+      "B_max": 6.337131733875671,
+      "B_median": 5.403149650926089,
+      "n": 39
+    },
+    "blocks.2.attn.qkv.weight": {
+      "shape_key": "shape(768, 64)_pos8",
+      "P_max": 6403.868002944584,
+      "B_max": 5.985819758996283,
+      "B_median": 5.360242739273894,
+      "n": 39
+    },
+    "blocks.2.attn.proj.weight": {
+      "shape_key": "shape(256, 64)_pos9",
+      "P_max": 7808.642920536745,
+      "B_max": 6.035414250690584,
+      "B_median": 5.328674047787413,
+      "n": 39
+    },
+    "blocks.2.mlp.fc.weight": {
+      "shape_key": "shape(1024, 64)_pos10",
+      "P_max": 247.15845329673303,
+      "B_max": 6.675229665882523,
+      "B_median": 5.29681817070428,
+      "n": 39
+    },
+    "blocks.2.mlp.proj.weight": {
+      "shape_key": "shape(256, 64)_pos11",
+      "P_max": 215.3378401945023,
+      "B_max": 6.396193668498452,
+      "B_median": 5.302331880142359,
+      "n": 39
+    },
+    "blocks.3.attn.qkv.weight": {
+      "shape_key": "shape(768, 64)_pos12",
+      "P_max": 8857.527227886236,
+      "B_max": 6.25403113819087,
+      "B_median": 5.365469441676861,
+      "n": 39
+    },
+    "blocks.3.attn.proj.weight": {
+      "shape_key": "shape(256, 64)_pos13",
+      "P_max": 6547.197580313748,
+      "B_max": 6.216578608972079,
+      "B_median": 5.362052790887725,
+      "n": 39
+    },
+    "blocks.3.mlp.fc.weight": {
+      "shape_key": "shape(1024, 64)_pos14",
+      "P_max": 205.09271676802695,
+      "B_max": 6.209534016147632,
+      "B_median": 5.40658589510588,
+      "n": 39
+    },
+    "blocks.3.mlp.proj.weight": {
+      "shape_key": "shape(256, 64)_pos15",
+      "P_max": 295.5645004785152,
+      "B_max": 6.041539210090018,
+      "B_median": 5.318690856440507,
+      "n": 39
+    }
+  }
+}
